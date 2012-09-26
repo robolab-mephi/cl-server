@@ -1,1 +1,15 @@
-Server for RN. Common LISP, clojure cl(threads).
+Server for RN. Common LISP, sbcl(threads).
+
+Start coordinator (temporary):
+1. From command line go to "cl-server" directory and run sbcl:
+	$ sbcl
+2. Copy text from "server.lisp" to sbcl console and wait while execution continues.
+3. If there are any error messages, report bug on https://github.com/petr-sorokoumov/cl-server.
+4. Run driver modules for devices (e.g. robotic platforms, range finders)
+5. Check system state from coordinator console by the command
+	> (known-nodes 'print-info)
+	Normal output is list:
+	<node> <address>
+	->	<program> <port>
+	->	->	<device-type> <device-name>
+6. To stop coordinator, enter (quit)

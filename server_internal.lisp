@@ -2,8 +2,8 @@
 
 ; internal variables
 (defvar *my-node-name* (string-upcase (concatenate 'string "MyNode" (write-to-string (get-universal-time)))))
-(defvar *my-node-address* "192.168.208.110")
-(defvar *multicast-addresses* '("192.168.208.98"))
+(defvar *my-node-address* "192.168.208.154")
+(defvar *multicast-addresses* '("192.168.208.110"))
 (defvar *my-node-port* 2345)
 
 ; debug action detalization:
@@ -318,6 +318,11 @@
 	;; message "DEVICESOF <program-name> L(<device-type> <device-name>)" - add devices
 	((compare-lists rec-message '("DEVICESOF"))
 	 (known-nodes 'add-devices-of-program  (cadr rec-message) (caddr rec-message)))
+	;; message "GIVEME MYNODENAME <program-name>" -> "TAKE YOURNODENAME <node-name>"
+	((compare-lists rec-message '("GIVEME" "MYNODENAME"))
+		(answer-for-program 
+			(known-nodes 'get-own-program-connection-data (caddr rec-message)) 
+			"TAKE YOURNODENAME ~A" *my-node-name*))
 	;; message "GIVEME DEVICES <sender> <type>" -> "TAKE DEVICES <type> L(node program device-name)"
 	((compare-lists rec-message '("GIVEME" "DEVICES"))
 	 (if (known-nodes 'is-my-program? (caddr rec-message))
@@ -326,16 +331,14 @@
 			     (cadddr rec-message)
 				 (known-nodes 'get-devices-of-type (cadddr rec-message)))
 		(add-log-message "reciever" (format nil "Unknown program ~A sent GIVEME DEVICE to me" (caddr rec-message)))))
-	;; message "GIVEME CONNECTION <sender-name> <node> <prog> <device-name>"
+	;; message "GIVEME CONNECTION <sender-name> (<node> <prog> <device-name>)"
 	((compare-lists rec-message '("GIVEME" "CONNECTION"))
-	 (let ((dev-conn (known-nodes 'get-device-connection-data (car rec-message) (cadr rec-message) (caddr rec-message))))
-	   (answer-for-program (known-nodes 'get-own-program-connection-data (car rec-message))
-			       "TAKE CONNECTION ~A ~A ~A ~A ~A"  
-			       (cadddr rec-message) 
-			       (car (cddddr rec-message))
-			       (cadr (cddddr rec-message))
-			       (cadr dev-conn)
-			       (caddr dev-conn))))
+		(let* ((sender (cadddr rec-message))
+			(dev-conn (known-nodes 'get-device-connection-data (car sender) (cadr sender) (caddr sender))))
+	   (answer-for-program (known-nodes 'get-own-program-connection-data (caddr rec-message))
+			       "TAKE CONNECTION (~A ~A ~A) (~A ~A)"  
+			       (car sender) (cadr sender) (caddr sender)
+			       (cadr dev-conn) (caddr dev-conn))))
 	;; ((string-equal rec-message "renewed  "))
 ;	((compare-lists rec-message '("PLEASE-START" "FUNCTION")) ; !!! not finished yet
 ;	 (answer-for-program  "PLEASE-START FUNCTION ~A ~A ~A" (caddr rec-message)))
