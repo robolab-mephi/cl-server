@@ -1,0 +1,3 @@
+Add instruction: >>GIVEME MYNODENAME <prog>
+<<TAKE YOURNODENAME <nodename>
+GIVEME CONNECTION - optional field <IP PORT>
