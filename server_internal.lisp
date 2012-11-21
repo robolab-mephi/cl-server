@@ -112,9 +112,9 @@
 
 ; known nodes
 ; issues: !!!
-; kn-nodes: H(node-name): S node( address programs )
-; programs: H(program-name): S program( port devices )
-; devices: L S device( type name )
+; kn-nodes: H(node-name): S node(address programs)
+; programs: H(program-name): S program ( port devices)
+; devices: L S device(type name)
 
 (let ((kn-nodes (make-hash-table :test #'equal)))
   (defun known-nodes (cmd &rest args)
@@ -247,7 +247,8 @@
       ;; get-device-connection-data node program device -> <is-device?> address port
       (get-device-connection-data
 	 (if (and (known-nodes 'is-node? (car args)) ; there is node
-		  (nth-value 1 (gethash (cadr args) (node-programs (gethash (car args) kn-nodes)))) ; there is program in node
+		  (let ((node-progs (node-programs (gethash (car args) kn-nodes))))
+			(nth-value 1 (gethash (cadr args) node-progs))) ; there is program in node
 		  (some #'(lambda (dev-descr) 
 			    (equal (device-name dev-descr) (caddr args)))
 			(program-devices (gethash (cadr args) (node-programs (gethash (car args) kn-nodes)))))) ; there is device in program
@@ -259,15 +260,12 @@
       (get-own-program-connection-data
        (when (known-nodes 'is-my-program? (car args))
 	   (program-port (gethash (car args) (node-programs (gethash *my-node-name* kn-nodes))))))
-	   ;; get-node-connection-data node -> IP | nil
-	  (get-node-connection-data
-       (when (known-nodes 'is-node? (car args))
-		(node-address (gethash (car args) kn-nodes))))
       (t ;;; !!! ADD exception here
        (format t "known-nodes: unknown command ~A~&" cmd)
        nil))))
 
- (trace known-nodes) ; !!! DEBUG
+(trace known-nodes)
+(defvar known-nodes-trace t) ; !!! DEBUG
 	   
 	   
 ; planned actions list --- add!!!
@@ -309,12 +307,8 @@
 	 (known-nodes 'add-programs (cadr rec-message) (caddr rec-message)))
 	;; message "RENEWED <node-name>" - answer "WHOIS"
 	((compare-lists rec-message '("RENEWED"))
-	 (answer-for-server sender-ip "WHOIS NODE ~A" (caddr rec-message)))	 
-	;; !!! message "PLEASE-START (<prog> <device-name> <function-name>) <activity> <port>"
-	;; => "START-YOUR (<device-name> <function-name>) <activity> <IP> <port>"
-;;;	((compare-lists rec-message '("PLEASE-START"))
-;;;		
-;;;		)
+	 (answer-for-server sender-ip "WHOIS NODE ~A" (caddr rec-message)))
+; ((string-equal rec-message "please-start 'your "))
 	;; messages from clients
 	;; message "IAM PROGRAM <program-name> <port>" - if we don't know it, answer "WHOIS PROGRAM"
 	((compare-lists rec-message '("IAM" "PROGRAM"))
@@ -339,7 +333,7 @@
 			     (cadddr rec-message)
 				 (known-nodes 'get-devices-of-type (cadddr rec-message)))
 		(add-log-message "reciever" (format nil "Unknown program ~A sent GIVEME DEVICE to me" (caddr rec-message)))))
-	;; message "GIVEME CONNECTION <sender-name> (<node> <prog> <device-name>) -> TAKE CONNECTION (<node> <prog> <device-name>) (<ip> <port>)"
+	;; message "GIVEME CONNECTION <sender-name> (<node> <prog> <device-name>)"
 	((compare-lists rec-message '("GIVEME" "CONNECTION"))
 		(let* ((sender (cadddr rec-message))
 			(dev-conn (known-nodes 'get-device-connection-data (car sender) (cadr sender) (caddr sender))))
@@ -348,34 +342,7 @@
 			       (car sender) (cadr sender) (caddr sender)
 			       (cadr dev-conn) (caddr dev-conn))))
 	;; ((string-equal rec-message "renewed  "))
-
-	;; message "START (<sender> [<port>]) (<node> <prog> <device-name> <function-name>) <activity= nil | t>"
-	;; => {if our node} "START-YOUR (<device-name> <function-name>) <activity> <IP> <port>"
-	;; => {if other node} "PLEASE-START (<prog> <device-name> <function-name>) <activity> <port>"
-	;; !!! also: if node/program/device/function not found, send error message
-	((compare-lists rec-message '("START"))
-	 (if (known-nodes 'is-my-program? (caadr rec-message))
-		;;; when sender is good, get port, where answer should be sent:
-		(let ((port (or (cadadr rec-message) (known-nodes 'get-own-program-connection-data (caadr rec-message))))
-				(address (caddr rec-message)))
-			(if (eq  (caaddr rec-message) *my-node-name*)
-			;;; when target is on our node, send START-YOUR
-				(answer-for-program (known-nodes 'get-own-program-connection-data (cadr address))
-					"START-YOUR ~A ~A ~A ~A"  
-					(cddr address)
-					(cadddr rec-message) *my-node-address* port)
-			;;; else send PLEASE-START
-				(if (known-nodes 'is-program-of-node? (car address) (cadr address))
-					(answer-for-server (known-nodes 'get-node-connection-data (car address))
-						"PLEASE-START ~A ~A ~A" 
-						(cdr address)
-						(cadddr rec-message) port)
-					;;; if destination is unknown, log error
-					(add-log-message "reciever" (format nil "Message sending to unknown program ~A:~A" (car address) (cadr address))))))
-		;;; if sender unknown, log error
-		(add-log-message "reciever" (format nil "Unknown program ~A sent START to me" (caadr rec-message)))))
-		
-	;	((compare-lists rec-message '("PLEASE-START" "FUNCTION")) ; !!! not finished yet
+;	((compare-lists rec-message '("PLEASE-START" "FUNCTION")) ; !!! not finished yet
 ;	 (answer-for-program  "PLEASE-START FUNCTION ~A ~A ~A" (caddr rec-message)))
       (t (add-log-message "reciever" (format nil "Unknown command received: ~A" (caddr rec-message)))))
     (socket-listener-function initial-socket))))

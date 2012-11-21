@@ -1,0 +1,1 @@
+sbcl --userinit "C:/Documents and Settings/RobotTeam/.sbclrc" --load server.lisp --noinform
