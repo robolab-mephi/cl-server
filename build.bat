@@ -1,1 +1,1 @@
-sbcl --userinit "C:/Documents and Settings/RobotTeam/.sbclrc" --load server.lisp --noinform
+sbcl --userinit "C:/Documents and Settings/ROBOT TEAM/.sbclrc" --load server.lisp --noinform

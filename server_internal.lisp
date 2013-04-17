@@ -2,7 +2,7 @@
 
 ; internal variables
 (defvar *my-node-name* (string-upcase (concatenate 'string "MyNode" (write-to-string (get-universal-time)))))
-(defvar *my-node-address* "192.168.208.154")
+(defvar *my-node-address* "192.168.208.140")
 (defvar *multicast-addresses* '("192.168.208.110"))
 (defvar *my-node-port* 2345)
 
@@ -287,8 +287,11 @@
 			     *my-node-address* ,port :protocol :datagram) ,tempvar (length  ,tempvar)))))
 
 ; messages listener
-(defun socket-listener-function (initial-socket)   
-  (multiple-value-bind (received-data data-length sender-ip sender-port) (usocket:socket-receive initial-socket nil 200)
+(defun socket-listener-function ()   
+	(let ((socket-listener (usocket:socket-connect ;;; !!! add error ADDRINUSE processing
+				  nil nil :protocol :datagram :local-host *my-node-address* :local-port *my-node-port*)))
+				  (loop
+  (multiple-value-bind (received-data data-length sender-ip sender-port) (usocket:socket-receive socket-listener nil 200)
     (let ((rec-message (split-data (string-upcase (array-to-string received-data data-length)))))
       (format t "RECIEVED ~A ~A ~A ~A~&" rec-message data-length sender-ip sender-port)
       (cond 
@@ -345,20 +348,17 @@
 ;	((compare-lists rec-message '("PLEASE-START" "FUNCTION")) ; !!! not finished yet
 ;	 (answer-for-program  "PLEASE-START FUNCTION ~A ~A ~A" (caddr rec-message)))
       (t (add-log-message "reciever" (format nil "Unknown command received: ~A" (caddr rec-message)))))
-    (socket-listener-function initial-socket))))
+    )))))
 
 ; function for network listener managing.
 ; !!! issues: no connection error processing.
   
-(let ((thread-listener nil)
-      (socket-listener nil)) ;;; !!! add error ADDRINUSE processing
+(let ((thread-listener nil)) 
   (defun main-socket-listener (cmd)
     (cond ((eq cmd 'close) (sb-thread:terminate-thread thread-listener))
 	  ((eq cmd 'start)  
-	   (setq socket-listener (usocket:socket-connect 
-				  nil nil :protocol :datagram :local-host *my-node-address* :local-port *my-node-port*))
 	   (setq thread-listener
-		 (sb-thread:make-thread #'socket-listener-function :name "thread-listener" :arguments socket-listener)))
+		 (sb-thread:make-thread #'socket-listener-function :name "thread-listener")))
 	  (t nil))))
 
 ; broadcast message formatter
