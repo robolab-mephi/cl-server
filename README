@@ -1,15 +1,19 @@
 Server for RN. Common LISP, sbcl(threads).
 
-Start coordinator (temporary):
-1. From command line go to "cl-server" directory and run sbcl:
-	$ sbcl
-2. Copy text from "server.lisp" to sbcl console and wait while execution continues.
-3. If there are any error messages, report bug on https://github.com/petr-sorokoumov/cl-server.
-4. Run driver modules for devices (e.g. robotic platforms, range finders)
-5. Check system state from coordinator console by the command
-	> (known-nodes 'print-info)
-	Normal output is list:
+Dependencies: usocket
+
+Installing:
+--- load source from repository:
+    git clone https://github.com/robolab-mephi/cl-server
+--- change file config.lisp.example accordingly with your environment
+--- rename file config.lisp.example in config.lisp
+--- change file build.bat
+--- run build.bat to create application coord.exe (both in Unix and Windows environments)
+--- run coord.exe file
+--- check system state from coordinator console by the command info:
+	> info
 	<node> <address>
 	->	<program> <port>
 	->	->	<device-type> <device-name>
-6. To stop coordinator, enter (quit)
+--- run driver modules for devices (e.g. robotic platforms, range finders)
+--- to stop coordinator, enter <quit> instruction

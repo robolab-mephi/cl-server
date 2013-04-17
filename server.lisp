@@ -41,6 +41,8 @@
 					(progn (trace known-nodes)
 						(format t "Debug on~&")))
 				(setf known-nodes-trace (not known-nodes-trace)))
+			((string-equal command-string "RENEW")
+			 (renew-our-config))
 			(t (format t "Unknown command: ~A~&" command-string)))))
 
 ;(known-nodes 'add-programs *my-node-name* '(("R_PROG2" 3245 (("RANGE-FINDER" "RT0")))))

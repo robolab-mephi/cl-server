@@ -1,0 +1,5 @@
+; internal variables
+(defvar *my-node-name* (string-upcase (concatenate 'string "MyNode" (write-to-string (get-universal-time)))))
+(defvar *my-node-address* "192.168.208.110")
+(defvar *multicast-addresses* '("192.168.208.140"))
+(defvar *my-node-port* 2345)

@@ -1,1 +1,2 @@
-sbcl --userinit "C:/Documents and Settings/ROBOT TEAM/.sbclrc" --load server.lisp --noinform
+#!/bin/bash
+sbcl --userinit "/home/beaver/.sbclrc" --load server.lisp --noinform
